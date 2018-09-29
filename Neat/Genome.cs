@@ -24,7 +24,7 @@ namespace Neat
         /// </summary>
         public NodeGemone[] nodeGemones;
         private int baoluizhi;
-
+        public int Length { get { return nodeGemones.Length; } }
         /// <summary>
         /// 生成基因
         /// </summary>
@@ -116,34 +116,73 @@ namespace Neat
             
             return child;
         }
-
+            
         /// <summary>
         /// 变异
         /// </summary>
         /// <param name="w">变异率</param>
-        public void Variation(float w=0.08f)
+        public void Variation(float w=0.1f)
         {
+            int num = Length;
             Random r = new Random();
-            for (int inp = 0; inp < nodeGemones.Length; inp++)
+            for (int inp = 0; inp < num; inp++)
             {
-                for (int oup = 0; oup < nodeGemones.Length; oup++)
+                for (int oup = 0; oup < num; oup++)
                 {
                     if (r.NextDouble() < w)
                     {
-                        if(r.NextDouble() < 0.5f)
+                        if (r.NextDouble() < 0.5f)
                         {
                             //节点变异
+                            bool[,] newConfig = new bool[Length + 1, Length + 1];
+                            newConfig.LoadArray(LinkGenones);
+                            int from;
+                            do
+                                from = r.Next(Length);
+                            while (nodeGemones[from].Type != NodeType.Output);
 
+                            List<int> indexs = new List<int>();
+                            for (int i = 0; i < Length; i++)
+                                if (LinkGenones[from, i])
+                                    indexs.Add(i);
+                            int index = indexs.ToArray().RandomChoice();
+
+                            var l = nodeGemones.ToList();
+                            l.Add(new NodeGemone());
+                            nodeGemones = l.ToArray();
+
+                            newConfig[from, index] = false;
+                            newConfig[from, Length] = true;
+                            newConfig[Length, index] = true;
+                            LinkGenones = newConfig;
                         }
                         else
                         {
                             //连接变异
                             bool[,] newConfig = (bool[,])LinkGenones.Clone();
+                            int to;
+                            int testnum = 0;
                             do
                             {
+                                testnum++;
+                                int from = r.Next(Length);
+                                to = r.Next(Length);
+                                newConfig[from, to] = true;
 
-                            } while (false);
+                            } while (newConfig.CheakLoop(to, to) && testnum < 10);
+                            LinkGenones = newConfig;
                         }
+
+                        float mean_w = LinkWs.Mean();
+                        int input = r.Next(Length);
+                        List<int> inds = new List<int>();
+                        for (int i = 0; i < Length; i++)
+                            if (LinkGenones[input, i])
+                                inds.Add(i);
+                        int ind = inds.ToArray().RandomChoice();
+                        LinkWs[input, ind] = ClassExtend.NormalDistribution(mean_w, 1);
+                        nodeGemones[input].b = ClassExtend.NormalDistribution(mean_w, 1);
+
                     }
                 }
             }

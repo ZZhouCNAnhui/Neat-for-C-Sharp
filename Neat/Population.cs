@@ -8,6 +8,9 @@ namespace Neat
 {
     public class Population
     {
+        public delegate float FitnessFunction(Genome genome);
+        
+
         public Genome[] genomes;
 
         /// <summary>
@@ -28,7 +31,7 @@ namespace Neat
         private Genome[] Clear(Genome[] genomes)
         {
             List<Genome> l = new List<Genome>();
-
+            
             foreach (var item in genomes)
             {
                 if (item != null)
@@ -56,6 +59,42 @@ namespace Neat
                 }
 
             }
+        }
+
+        public Genome Run(FitnessFunction function,int num = 100,float F = 0.6f)
+        {
+            Genome BestG = null;
+            for (int j = 0; j < num; j++)
+            {
+                Dictionary<Genome, float> pairs = new Dictionary<Genome, float>();
+                float mean = 0;
+                float maxFitness = 0;
+                foreach (var item in genomes)
+                {
+                    var fl = function(item);
+                    pairs.Add(item, fl);
+                    mean += fl;
+                    if (maxFitness < fl)
+                    {
+                        maxFitness = fl;
+                        BestG = item;
+                    }
+                }
+                mean /= genomes.Length;
+
+                List<int> RomoveList = new List<int>();
+                for (int i = 0; i < genomes.Length; i++)
+                    if (pairs[genomes[i]] < mean * F)
+                        RomoveList.Add(i);
+
+                foreach (var i in RomoveList)
+                    genomes[i] = null;
+
+                Reproduction();
+            }
+
+            return BestG;
+
         }
 
     }
